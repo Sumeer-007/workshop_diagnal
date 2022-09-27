@@ -12,30 +12,39 @@ import poster7 from "./images/poster7.jpg";
 import poster8 from "./images/poster8.jpg";
 import poster9 from "./images/poster9.jpg";
 import missingPoster from "./images/placeholder_for_missing_posters.png";
-import { getList, resetLoading } from "./store/reducer";
-import Loader from "./components/Loader/loader";
+import { getList, getListByName } from "./store/reducer";
 import "./App.css";
 
 const App = () => {
   const dispatch = useDispatch();
-  const [isShow, toggleShow] = useState(false);
+  const [currentList, setCurrentList] = useState({});
 
   const listInnerRef = useRef();
 
-  const {
-    list = {},
-    currentPage = 0,
-    isListLoaded,
-  } = useSelector((state) => state.moviesReducer);
+  const { list = {}, currentPage = 0 } = useSelector(
+    (state) => state.moviesReducer
+  );
 
   useEffect(() => {
-    if (currentPage === 0) {
-      dispatch(resetLoading());
-      setTimeout(() => {
-        dispatch(getList(1));
-      }, 500);
-    }
+    dispatch(getList(currentPage + 1));
   }, []);
+
+  useEffect(() => {
+    if (isSearch) {
+      setCurrentList({ ...list });
+    } else {
+      if (list["content-items"]) {
+        const newContent = list["content-items"].content;
+        const currentContent = currentList["content-items"]
+          ? currentList["content-items"].content
+          : [];
+        setCurrentList({
+          ...newContent,
+          ["content-items"]: { content: [...newContent, ...currentContent] },
+        });
+      }
+    }
+  }, [list]);
 
   const imageMap = {
     "poster1.jpg": poster1,
@@ -51,57 +60,82 @@ const App = () => {
   };
 
   const onScroll = () => {
-    if (listInnerRef.current) {
+    if (listInnerRef.current && !isSearch) {
       const { scrollTop, scrollHeight, clientHeight } = listInnerRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && isListLoaded === "none") {
-        toggleShow(false);
-        dispatch(resetLoading("loading"));
-        setTimeout(() => {
-          dispatch(getList(currentPage + 1));
-        }, 500);
-      }
+      if (scrollTop + clientHeight >= scrollHeight)
+        dispatch(getList(currentPage + 1));
     }
   };
 
+  const [isSearch, toggleSearch] = useState(false);
+  const [searchName, setSearchName] = useState("");
+
+  const timer = useRef(null);
+
   useEffect(() => {
-    if (isListLoaded === "loaded") {
-      toggleShow(true);
-      dispatch(resetLoading("none"));
+    if (timer.current) {
+      clearTimeout(timer.current);
     }
-  }, [isListLoaded]);
+    if (searchName) {
+      timer.current = setTimeout(() => {
+        getListByNameDispatch();
+      }, 500);
+    }
+  }, [searchName]);
+
+  const getListByNameDispatch = () => dispatch(getListByName(searchName));
 
   return (
     <div className="app" onScroll={onScroll} ref={listInnerRef}>
       <div className="header">
         <div className="bar">
           <div>
-            <div className="icon">
+            <div
+              className="icon"
+              onClick={() => {
+                if (isSearch) {
+                  toggleSearch(false);
+                  setSearchName("");
+                  setCurrentList({});
+                  dispatch(getList(1));
+                }
+              }}
+            >
               <img src={back} />
             </div>
-            <div>{list?.title}</div>
+            {(!isSearch && <div>{list?.title}</div>) || (
+              <div className="input-box">
+                <input
+                  autoFocus
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
+              </div>
+            )}
           </div>
-          <div className="icon">
-            <img src={search} />
+          <div className="icon" onClick={() => toggleSearch(!isSearch)}>
+            {!isSearch && <img src={search} />}
           </div>
         </div>
       </div>
       <div className="second-layout">
-        {(isShow && (
-          <div className="main">
-            {list["content-items"]?.content?.map((movie, index) => (
-              <div key={index} className="poster">
-                <img
-                  src={
-                    (imageMap[movie["poster-image"]] &&
-                      imageMap[movie["poster-image"]]) ||
-                    imageMap[movie["poster-image"]]
-                  }
-                />
-                <div>{movie?.name}</div>
-              </div>
-            ))}
-          </div>
-        )) || <Loader />}
+        <div className="main">
+          {currentList["content-items"]?.content?.map((movie, index) => (
+            <div key={index} className="poster">
+              <img
+                src={
+                  (imageMap[movie["poster-image"]] &&
+                    imageMap[movie["poster-image"]]) ||
+                  imageMap[movie["poster-image"]]
+                }
+              />
+              <div>{movie?.name}</div>
+            </div>
+          ))}
+        </div>
+        {isSearch && !currentList && (
+          <div className="no-result">{"No result found"}</div>
+        )}
       </div>
     </div>
   );

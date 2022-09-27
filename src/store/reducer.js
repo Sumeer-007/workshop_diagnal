@@ -9,6 +9,31 @@ const listMap = {
   3: CONTENT_LISTING_PAGE_3,
 };
 
+const getSearchByName = (name = "") => {
+  const totalList = [
+    CONTENT_LISTING_PAGE_1,
+    CONTENT_LISTING_PAGE_2,
+    CONTENT_LISTING_PAGE_3,
+  ];
+
+  const newList = { ["content-items"]: { content: [] } };
+
+  const allContent = [];
+
+  totalList.forEach((item) => {
+    const searchName = name.toLowerCase();
+    item.page["content-items"].content.forEach((subItem) => {
+      if (subItem.name.toLowerCase().includes(searchName)) {
+        allContent.push(subItem);
+      }
+    });
+  });
+
+  newList["content-items"].content = allContent;
+
+  return newList;
+};
+
 export const moviesSlice = createSlice({
   name: "movies",
   initialState: {
@@ -19,23 +44,16 @@ export const moviesSlice = createSlice({
   reducers: {
     getList: (state, action) => {
       if (listMap[action.payload]) {
-        state.currentPage = action.payload;
         state.list = listMap[action.payload].page;
-      } else {
-        state.list = listMap[1].page;
-        state.currentPage = 1;
+        state.currentPage = action.payload;
       }
-      state.isListLoaded = "loaded";
     },
-    resetLoading: (state, action) => {
-      state.isListLoaded = action.payload;
-    },
-    resetCurrentPage: (state, page) => {
-      state.currentPage = page;
+    getListByName: (state, action) => {
+      state.list = getSearchByName(action.payload);
     },
   },
 });
 
-export const { getList, resetLoading, resetCurrentPage } = moviesSlice.actions;
+export const { getList, getListByName } = moviesSlice.actions;
 
 export default moviesSlice.reducer;

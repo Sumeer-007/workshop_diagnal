@@ -1,0 +1,36 @@
+.loader-container {
+    height: 100%;
+    width: 100%;
+    animation: accordion-animation 0.2s;
+    justify-content: center;
+}
+
+.loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    z-index: 10;
+    margin: 2rem;
+}
+
+.loader::after {
+    content: "";
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border-top: 3px solid #fff;
+    border-right: 3px solid transparent;
+    animation: rotator 700ms linear infinite;
+}
+
+@keyframes rotator {
+    to {
+        transform: rotate(360deg);
+    }
+}
